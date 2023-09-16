@@ -1,29 +1,32 @@
 // background.js
 
 // 백그라운드 페이지가 로드될 때 실행되는 코드
-chrome.runtime.onInstalled.addListener(({ reason, details }) => { // details 추가
+chrome.runtime.onInstalled.addListener(({ reason, details }) => {
   if (reason === 'install') {
     chrome.tabs.create({
       url: "input.html"
     });
-  } else if (reason === 'update') { // details.reason 대신 reason 사용
+  } else if (reason === 'update') {
     // 확장 프로그램이 업데이트될 때 실행될 코드
     console.log('Extension updated!');
   }
 });
+chrome.storage.local.clear().then(
+  ()=>{//cleared
+});
 
 // 데이터 캐싱 및 저장 (올바른 key와 value 사용)
-chrome.storage.local.set({ key: 'value' }, function() {
+chrome.storage.local.set({ myKey: 'myValue' }, function() {
   console.log('데이터가 저장되었습니다.');
 });
 
 // 저장된 데이터 읽기 (올바른 key 사용)
-chrome.storage.local.get('key', function(result) {
-  console.log('저장된 데이터:', result.key);
+chrome.storage.local.get('myKey', function(result) {
+  console.log('저장된 데이터:', result.myKey);
 });
 
 // 컨텐트 스크립트에서 이벤트 트리거
-document.dispatchEvent(new CustomEvent('customEventName', { detail: 'data' })); // data 추가
+document.dispatchEvent(new CustomEvent('customEventName', { detail: 'myData' }));
 
 // 이전에 검색한 URL 결과를 저장하는 객체
 const cachedResults = {};
@@ -65,3 +68,34 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     return true;
   }
 });
+
+// 로컬 스토리지에서 이미 검사한 URL을 저장하는 배열
+let checkedURLs = [];
+
+// 새로운 탭이나 창이 열릴 때 초기화
+chrome.tabs.onCreated.addListener(function(tab) {
+  checkedURLs = [];
+});
+
+// 메시지를 수신하여 URL을 검사하고 중복 여부를 확인
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  if (request.action === 'checkURL') {
+    const urlToCheck = request.url;
+
+    if (!checkedURLs.includes(urlToCheck)) {
+      // URL을 검사하고 결과를 웹 페이지로 보내거나 다른 작업을 수행
+      // 여기서는 결과를 콘솔에 출력하는 예시를 보여줍니다.
+      console.log(`Checking URL: ${urlToCheck}`);
+
+      // URL을 이미 검사한 것으로 표시
+      checkedURLs.push(urlToCheck);
+    } else {
+      console.log(`URL already checked: ${urlToCheck}`);
+    }
+
+    // 응답을 보냄
+    sendResponse({ success: true });
+  }
+});
+
+
